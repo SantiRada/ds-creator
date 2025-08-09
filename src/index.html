@@ -108,6 +108,45 @@
       background: var(--accent);
     }
     .danger { color:#ff7a7a; }
+    /* ——— TOV inputs ——— */
+    .form {
+      display: grid;
+      gap: 12px;
+      margin: 12px 0 16px;
+    }
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+    .label {
+      font-size: 12px;
+      opacity: .8;
+    }
+    .input {
+      width: 100%;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.04);
+      color: inherit;
+      padding: 0 10px;
+      outline: none;
+    }
+    .input::placeholder { opacity: .5; }
+    .input:focus {
+      border-color: rgba(255,255,255,.18);
+      background: rgba(255,255,255,.06);
+    }
+    .hint {
+      font-size: 11px;
+      opacity: .6;
+    }
+    .grid-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+    }
   </style>
 </head>
 <body>
@@ -147,68 +186,151 @@
     <div class="toolbar">
       <button class="link" id="back2">← Volver</button>
     </div>
+
     <h1>Table of Variants</h1>
-    <div class="info">Próximamente…</div>
+    <div class="info">
+      Selecciona un <b>Component Set</b> (master con variantes). El botón se habilita si la selección es válida.
+    </div>
+
+    <div class="form">
+      <div class="field">
+        <label class="label" for="tov-col-prop">Propiedad para columnas</label>
+        <input id="tov-col-prop" class="input" type="text" placeholder="p. ej.: Type, Tipo…">
+        <div class="hint">Si lo dejas vacío, se detecta automáticamente (type).</div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="tov-row-prop">Propiedad para filas</label>
+        <input id="tov-row-prop" class="input" type="text" placeholder="p. ej.: State, Estado…">
+        <div class="hint">Si lo dejas vacío, se detecta automáticamente (state).</div>
+      </div>
+    </div>
+
+    <div class="grid-actions">
+      <button id="tov-create" class="primary" disabled>Crear tabla</button>
+      <div id="tov-status" class="info"></div>
+    </div>
   </div>
 
-    <script>
+  <script>
+    // ----- refs a pantallas
     const home = document.getElementById('screen-home');
-    const cc = document.getElementById('screen-cc');
-    const tov = document.getElementById('screen-tov');
-    const statusEl = document.getElementById('status');
-    const btnCreate = document.getElementById('btn-create');
+    const cc   = document.getElementById('screen-cc');
+    const tov  = document.getElementById('screen-tov');
 
+    const tovColProp = document.getElementById('tov-col-prop');
+    const tovRowProp = document.getElementById('tov-row-prop');
+
+    // ----- refs CC (construction)
+    const statusEl   = document.getElementById('status');
+    const btnCreate  = document.getElementById('btn-create');
+
+    // ----- refs TOV (table of variants)
+    const tovCreate  = document.getElementById('tov-create');
+    const tovStatus  = document.getElementById('tov-status');
+
+    // ----- navegación entre pantallas
     const nav = (to) => {
-        home.style.display = to==='home' ? 'block' : 'none';
-        cc.style.display = to==='cc' ? 'block' : 'none';
-        tov.style.display = to==='tov' ? 'block' : 'none';
-        parent.postMessage({ pluginMessage: { type: 'ui:navigate', to } }, '*');
+      home.style.display = to === 'home' ? 'block' : 'none';
+      cc.style.display   = to === 'cc'   ? 'block' : 'none';
+      tov.style.display  = to === 'tov'  ? 'block' : 'none';
+      parent.postMessage({ pluginMessage: { type: 'ui:navigate', to } }, '*');
     };
 
-    // Spinner simple
+    // ----- spinner reutilizable
     const spinner = `
-        <span class="spin" style="
+      <span class="spin" style="
         display:inline-block;width:14px;height:14px;border-radius:50%;
         border:2px solid rgba(255,255,255,.4); border-top-color:#fff;
-        animation:spin 0.8s linear infinite; vertical-align:-2px;"></span>
-    `;
-    const css = document.createElement('style');
-    css.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
-    document.head.appendChild(css);
+        animation:spin 0.8s linear infinite; vertical-align:-2px;"></span>`;
 
-    document.getElementById('go-cc').onclick = () => nav('cc');
-    document.getElementById('go-tov').onclick = () => nav('tov');
-    document.getElementById('back').onclick = () => nav('home');
-    document.getElementById('back2').onclick = () => nav('home');
-    btnCreate.onclick = () => parent.postMessage({ pluginMessage: { type: 'cc:create' } }, '*');
+    // ----- listeners de navegación (botones de la UI)
+    const goCC  = document.getElementById('go-cc');
+    const goTOV = document.getElementById('go-tov');
+    const back1 = document.getElementById('back1');
+    const back2 = document.getElementById('back2');
 
+    if (goCC)  goCC.onclick  = () => nav('cc');
+    if (goTOV) goTOV.onclick = () => nav('tov');
+    if (back1) back1.onclick = () => nav('home');
+    if (back2) back2.onclick = () => nav('home');
+
+    // ----- acciones CC
+    if (btnCreate) {
+      btnCreate.onclick = () => {
+        parent.postMessage({ pluginMessage: { type: 'cc:create' } }, '*');
+      };
+    }
+
+    // ----- acciones TOV
+    if (tovCreate) {
+      tovCreate.onclick = () => {
+        parent.postMessage({
+          pluginMessage: {
+            type: 'tov:create',
+            colProp: document.getElementById('tov-col-prop').value,
+            rowProp: document.getElementById('tov-row-prop').value
+          }
+        }, '*');
+      };
+    }
+
+    // ----- mensajes desde code.js
     onmessage = (event) => {
-        const msg = event.data && event.data.pluginMessage;
-        if (!msg) return;
+      const msg = event.data && event.data.pluginMessage;
+      if (!msg) return;
 
-        if (msg.type === 'cc:selection-state') {
-        btnCreate.disabled = !msg.valid;
-        statusEl.textContent = msg.hint || '';
-        if (msg.error) statusEl.innerHTML = '<span style="color:#ff7a7a">' + msg.error + '</span>';
-        return;
+      // toasts rápidos
+      if (msg.type === 'toast' && msg.text) {
+        // podés reemplazar por un toast real; por ahora feedback mínimo
+        console.log('[plugin]', msg.text);
+      }
+
+      // --- CC: habilitación según selección y estado de creación
+      if (msg.type === 'cc:selection-state') {
+        if (btnCreate) btnCreate.disabled = !msg.valid;
+        if (statusEl)  statusEl.textContent = msg.hint || '';
+        if (msg.error && statusEl) {
+          statusEl.innerHTML = '<span class="danger">' + msg.error + '</span>';
         }
-        if (msg.type === 'toast') {
-        statusEl.textContent = msg.text || '';
         return;
-        }
-        if (msg.type === 'cc:creating') {
+      }
+      if (msg.type === 'cc:creating') {
+        if (!btnCreate) return;
         if (msg.value) {
-            btnCreate.disabled = true;
-            btnCreate.innerHTML = spinner;
+          btnCreate.disabled = true;
+          btnCreate.innerHTML = spinner;
         } else {
-            btnCreate.disabled = false;
-            btnCreate.textContent = 'Create construction';
+          btnCreate.disabled = false;
+          btnCreate.textContent = 'Create construction';
         }
         return;
+      }
+
+      // --- TOV: habilitación según selección y estado de creación
+      if (msg.type === 'tov:selection-state') {
+        if (tovCreate) tovCreate.disabled = !msg.valid;
+        if (tovStatus) tovStatus.textContent = msg.hint || '';
+        if (msg.error && tovStatus) {
+          tovStatus.innerHTML = '<span class="danger">' + msg.error + '</span>';
         }
+        return;
+      }
+      if (msg.type === 'tov:creating') {
+        if (!tovCreate) return;
+        if (msg.value) {
+          tovCreate.disabled = true;
+          tovCreate.innerHTML = spinner;
+        } else {
+          tovCreate.disabled = false;
+          tovCreate.textContent = 'Crear tabla';
+        }
+        return;
+      }
     };
 
+    // arranque en home
     nav('home');
-    </script>
+  </script>
 </body>
 </html>
