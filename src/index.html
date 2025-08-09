@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Design System Creator</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #1f1f1f;
+      --panel: #2a2a2a;
+      --text: #ffffff;
+      --muted: rgba(255,255,255,0.5);
+      --accent: #0099ff;
+      --radius: 10px;
+    }
+    * {
+      box-sizing:border-box;
+      font-family:"Space Grotesk", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+    body{
+      margin: 0;
+      padding: 16px;
+      background: var(--bg); color:var(--text);
+    }
+    h1 {
+      margin: 0 0 12px 0;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom:16px;
+    }
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .card {
+      background: var(--panel);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      outline: 1px solid rgba(255,255,255,0.06);
+    }
+    .card:hover { outline-color:rgba(0,153,255,0.5); }
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+    }
+    .arrow { color: var(--muted); }
+    .primary {
+      width: 100%;
+      padding: 12px 14px;
+      border: none;
+      border-radius: 12px;
+      background: var(--accent);
+      color:#fff;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .primary:disabled {
+      opacity:.5;
+      cursor: not-allowed;
+    }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .link {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .link:hover { color:#fff; }
+
+    /* Construction view bits */
+    .info {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 8px 0 12px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background:#242424;
+      color:#fff;
+      font-size: 12px;
+    }
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .danger { color:#ff7a7a; }
+  </style>
+</head>
+<body>
+  <div id="screen-home">
+    <h1>Design System Creator</h1>
+    <div class="subtitle">Creemos un Design System juntos, fácil y rápido.</div>
+    <div class="stack">
+      <div class="card" id="go-cc">
+        <div class="card-title">
+          <span>Construction Component</span>
+        </div>
+        <span class="arrow">›</span>
+      </div>
+      <div class="card" id="go-tov">
+        <div class="card-title">
+          <span>Table of Variants</span>
+        </div>
+        <span class="arrow">›</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="screen-cc" style="display:none">
+    <div class="toolbar">
+      <button class="link" id="back">← Volver</button>
+    </div>
+    <h1>Construction Component</h1>
+    <div class="info">
+      Selecciona exactamente <b>1</b> componente (master, variante o instancia).<br/>
+      El botón se habilita cuando la selección es válida.
+    </div>
+    <button id="btn-create" class="primary" disabled>Create construction</button>
+    <div id="status" class="info"></div>
+  </div>
+
+  <div id="screen-tov" style="display:none">
+    <div class="toolbar">
+      <button class="link" id="back2">← Volver</button>
+    </div>
+    <h1>Table of Variants</h1>
+    <div class="info">Próximamente…</div>
+  </div>
+
+    <script>
+    const home = document.getElementById('screen-home');
+    const cc = document.getElementById('screen-cc');
+    const tov = document.getElementById('screen-tov');
+    const statusEl = document.getElementById('status');
+    const btnCreate = document.getElementById('btn-create');
+
+    const nav = (to) => {
+        home.style.display = to==='home' ? 'block' : 'none';
+        cc.style.display = to==='cc' ? 'block' : 'none';
+        tov.style.display = to==='tov' ? 'block' : 'none';
+        parent.postMessage({ pluginMessage: { type: 'ui:navigate', to } }, '*');
+    };
+
+    // Spinner simple
+    const spinner = `
+        <span class="spin" style="
+        display:inline-block;width:14px;height:14px;border-radius:50%;
+        border:2px solid rgba(255,255,255,.4); border-top-color:#fff;
+        animation:spin 0.8s linear infinite; vertical-align:-2px;"></span>
+    `;
+    const css = document.createElement('style');
+    css.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(css);
+
+    document.getElementById('go-cc').onclick = () => nav('cc');
+    document.getElementById('go-tov').onclick = () => nav('tov');
+    document.getElementById('back').onclick = () => nav('home');
+    document.getElementById('back2').onclick = () => nav('home');
+    btnCreate.onclick = () => parent.postMessage({ pluginMessage: { type: 'cc:create' } }, '*');
+
+    onmessage = (event) => {
+        const msg = event.data && event.data.pluginMessage;
+        if (!msg) return;
+
+        if (msg.type === 'cc:selection-state') {
+        btnCreate.disabled = !msg.valid;
+        statusEl.textContent = msg.hint || '';
+        if (msg.error) statusEl.innerHTML = '<span style="color:#ff7a7a">' + msg.error + '</span>';
+        return;
+        }
+        if (msg.type === 'toast') {
+        statusEl.textContent = msg.text || '';
+        return;
+        }
+        if (msg.type === 'cc:creating') {
+        if (msg.value) {
+            btnCreate.disabled = true;
+            btnCreate.innerHTML = spinner;
+        } else {
+            btnCreate.disabled = false;
+            btnCreate.textContent = 'Create construction';
+        }
+        return;
+        }
+    };
+
+    nav('home');
+    </script>
+</body>
+</html>
