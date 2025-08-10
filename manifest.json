@@ -1,8 +1,12 @@
 {
   "name": "Design System Creator",
-  "id": "design-system-creator",
+  "id": "1536278510480413136",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "index.html",
-  "editorType": ["figma"]
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  }
 }

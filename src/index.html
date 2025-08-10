@@ -147,6 +147,7 @@
       align-items: center;
       justify-content: space-between;
     }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -166,6 +167,20 @@
         </div>
         <span class="arrow">›</span>
       </div>
+      <div class="card" id="go-fonts">
+        <div class="card-title">
+          <span>Generate Fonts</span>
+        </div>
+        <span class="arrow">›</span>
+      </div>
+      <div class="card" id="go-palette">
+        <div class="card-title"><span>Generate Palette</span></div>
+        <span class="arrow">›</span>
+      </div>
+      <div class="card" id="go-icons">
+        <div class="card-title"><span>Generate Icon Space</span></div>
+        <span class="arrow">›</span>
+      </div>
     </div>
   </div>
 
@@ -173,12 +188,12 @@
     <div class="toolbar">
       <button class="link" id="back">← Volver</button>
     </div>
-    <h1>Construction Component</h1>
+    <h1>Crear Construcción de Componentes</h1>
     <div class="info">
       Selecciona exactamente <b>1</b> componente (master, variante o instancia).<br/>
       El botón se habilita cuando la selección es válida.
     </div>
-    <button id="btn-create" class="primary" disabled>Create construction</button>
+    <button id="btn-create" class="primary" disabled>Crear Construcción</button>
     <div id="status" class="info"></div>
   </div>
 
@@ -187,7 +202,7 @@
       <button class="link" id="back2">← Volver</button>
     </div>
 
-    <h1>Table of Variants</h1>
+    <h1>Tabla de Variantes</h1>
     <div class="info">
       Selecciona un <b>Component Set</b> (master con variantes). El botón se habilita si la selección es válida.
     </div>
@@ -212,6 +227,47 @@
     </div>
   </div>
 
+  <div id="screen-fonts" style="display:none">
+    <div class="toolbar">
+      <button class="link" id="back3">← Volver</button>
+    </div>
+    <h1>Generar Fuentes</h1>
+    <div class="info">
+      Recorre todo el archivo (todas las páginas) y genera, en la página actual,
+      una lista de estilos tipográficos detectados. Los títulos se asignan por tamaño
+      (Heading 1..6) y, si un estilo solo aparece dentro de un único componente,
+      toma el nombre de ese componente (p. ej. <b>Tag, Button</b>, etc).
+    </div>
+    <button id="fonts-generate" class="primary">Generar Fuentes</button>
+    <div id="fonts-status" class="info"></div>
+  </div>
+
+  <div id="screen-palette" style="display:none">
+    <div class="toolbar">
+      <button class="link" id="back4">← Volver</button>
+    </div>
+    <h1>Generar Paleta</h1>
+    <div class="info">
+      Escanea colores (fills, strokes, efectos, textos), estilos y variables de color. Genera
+      un panel agrupado por tonos y variaciones.
+    </div>
+    <button id="palette-generate" class="primary">Generar Paleta</button>
+    <div id="palette-status" class="info"></div>
+  </div>
+
+  <div id="screen-icons" style="display:none">
+    <div class="toolbar">
+      <button class="link" id="back5">← Volver</button>
+    </div>
+    <h1>Generate Icon Space</h1>
+    <div class="info">
+      Detecta íconos (frames cuadrados ≤100 con vectores), los agrupa por tamaño (16, 20, 24, 32…)
+      y crea un espacio con copias normalizadas a un solo color.
+    </div>
+    <button id="icons-generate" class="primary">Generar icon space</button>
+    <div id="icons-status" class="info"></div>
+  </div>
+
   <script>
     // ----- refs a pantallas
     const home = document.getElementById('screen-home');
@@ -220,6 +276,27 @@
 
     const tovColProp = document.getElementById('tov-col-prop');
     const tovRowProp = document.getElementById('tov-row-prop');
+
+    // ----- Contain of "Generate Fonts"
+    const fonts  = document.getElementById('screen-fonts');
+    const goFonts = document.getElementById('go-fonts');
+    const back3 = document.getElementById('back3');
+    const btnFonts = document.getElementById('fonts-generate');
+    const fontsStatus = document.getElementById('fonts-status');
+
+    // ---- Palette refs
+    const paletteScreen = document.getElementById('screen-palette');
+    const goPalette     = document.getElementById('go-palette');
+    const back4         = document.getElementById('back4');
+    const btnPalette    = document.getElementById('palette-generate');
+    const paletteStatus = document.getElementById('palette-status');
+
+    // ---- Icon Space refs
+    const iconsScreen  = document.getElementById('screen-icons');
+    const goIcons      = document.getElementById('go-icons');
+    const back5        = document.getElementById('back5');
+    const btnIcons     = document.getElementById('icons-generate');
+    const iconsStatus  = document.getElementById('icons-status');
 
     // ----- refs CC (construction)
     const statusEl   = document.getElementById('status');
@@ -231,9 +308,12 @@
 
     // ----- navegación entre pantallas
     const nav = (to) => {
-      home.style.display = to === 'home' ? 'block' : 'none';
-      cc.style.display   = to === 'cc'   ? 'block' : 'none';
-      tov.style.display  = to === 'tov'  ? 'block' : 'none';
+      home.style.display        = to === 'home'    ? 'block' : 'none';
+      cc.style.display          = to === 'cc'      ? 'block' : 'none';
+      tov.style.display         = to === 'tov'     ? 'block' : 'none';
+      fonts.style.display       = to === 'fonts'   ? 'block' : 'none';
+      paletteScreen.style.display = to === 'palette' ? 'block' : 'none';
+      iconsScreen.style.display = to === 'icons'   ? 'block' : 'none';
       parent.postMessage({ pluginMessage: { type: 'ui:navigate', to } }, '*');
     };
 
@@ -247,13 +327,50 @@
     // ----- listeners de navegación (botones de la UI)
     const goCC  = document.getElementById('go-cc');
     const goTOV = document.getElementById('go-tov');
-    const back1 = document.getElementById('back1');
+    const back1 = document.getElementById('back');
     const back2 = document.getElementById('back2');
 
-    if (goCC)  goCC.onclick  = () => nav('cc');
-    if (goTOV) goTOV.onclick = () => nav('tov');
-    if (back1) back1.onclick = () => nav('home');
-    if (back2) back2.onclick = () => nav('home');
+    if (goCC)     { goCC.onclick  = () => nav('cc'); }
+    if (goTOV)    { goTOV.onclick = () => nav('tov'); }
+    if (goPalette) goPalette.onclick = () => nav('palette');
+    if (goFonts)  { goFonts.onclick = () => nav('fonts'); }
+    if (goIcons) goIcons.onclick = () => nav('icons');
+    
+    if (back1)    { back1.onclick = () => nav('home'); }
+    if (back2)    { back2.onclick = () => nav('home'); }
+    if (back3)    { back3.onclick   = () => nav('home'); }
+    if (back4)    { back4.onclick     = () => nav('home'); }
+    if (back5)   back5.onclick   = () => nav('home');
+    
+    // ----- acciones Icons
+    if (btnIcons) {
+      btnIcons.onclick = () => {
+        btnIcons.disabled = true;
+        btnIcons.innerHTML = spinner + '<span style="margin-left:6px;">0%</span>';
+        iconsStatus.textContent = 'Buscando íconos…';
+        parent.postMessage({ pluginMessage: { type: 'icons:generate' } }, '*');
+      };
+    }
+
+    // ----- acciones Fonts
+    if (btnFonts) {
+      btnFonts.onclick = () => {
+        btnFonts.disabled = true;
+        btnFonts.innerHTML = spinner;
+        fontsStatus.textContent = 'Analizando texto en todo el archivo…';
+        parent.postMessage({ pluginMessage: { type: 'fonts:generate' } }, '*');
+      };
+    }
+
+    // ----- acciones Palette
+    if (btnPalette) {
+      btnPalette.onclick = () => {
+        btnPalette.disabled = true;
+        btnPalette.innerHTML = spinner + '<span style="margin-left:6px;">0%</span>';
+        paletteStatus.textContent = 'Escaneando colores…';
+        parent.postMessage({ pluginMessage: { type: 'palette:generate' } }, '*');
+      };
+    }
 
     // ----- acciones CC
     if (btnCreate) {
@@ -288,8 +405,8 @@
 
       // --- CC: habilitación según selección y estado de creación
       if (msg.type === 'cc:selection-state') {
-        if (btnCreate) btnCreate.disabled = !msg.valid;
-        if (statusEl)  statusEl.textContent = msg.hint || '';
+        if (btnCreate) { btnCreate.disabled = !msg.valid; }
+        if (statusEl) { statusEl.textContent = msg.hint || ''; }
         if (msg.error && statusEl) {
           statusEl.innerHTML = '<span class="danger">' + msg.error + '</span>';
         }
@@ -327,7 +444,53 @@
         }
         return;
       }
-    };
+      
+      // Fonts data
+      if (msg.type === 'fonts:done') {
+        if (btnFonts) { btnFonts.disabled = false; btnFonts.textContent = 'Generar tipografías'; }
+        if (fontsStatus) fontsStatus.textContent = 'Listo. Se creó el bloque en la página actual.';
+        return;
+      }
+      if (msg.type === 'fonts:error') {
+        if (btnFonts) { btnFonts.disabled = false; btnFonts.textContent = 'Generar tipografías'; }
+        if (fontsStatus) fontsStatus.innerHTML = '<span class="danger">' + (msg.error || 'Error') + '</span>';
+        return;
+      }
+    
+      // Palette data
+      if (msg.type === 'palette:progress') {
+        if (btnPalette) btnPalette.innerHTML = spinner + '<span style="margin-left:6px;">' + (msg.value|0) + '%</span>';
+        if (paletteStatus) paletteStatus.textContent = msg.label || ('Progreso ' + (msg.value|0) + '%');
+        return;
+      }
+      if (msg.type === 'palette:done') {
+        if (btnPalette) { btnPalette.disabled = false; btnPalette.textContent = 'Generar paleta'; }
+        if (paletteStatus) paletteStatus.textContent = 'Listo. Se creó el bloque en la página actual.';
+        return;
+      }
+      if (msg.type === 'palette:error') {
+          if (btnPalette) { btnPalette.disabled = false; btnPalette.textContent = 'Generar paleta'; }
+          if (paletteStatus) paletteStatus.innerHTML = '<span class="danger">' + (msg.error || 'Error') + '</span>';
+          return;
+        }
+
+      // Icons data
+      if (msg.type === 'icons:progress') {
+        if (btnIcons) btnIcons.innerHTML = spinner + '<span style="margin-left:6px;">' + (msg.value|0) + '%</span>';
+        if (iconsStatus) iconsStatus.textContent = msg.label || ('Progreso ' + (msg.value|0) + '%');
+        return;
+      }
+      if (msg.type === 'icons:done') {
+        if (btnIcons) { btnIcons.disabled = false; btnIcons.textContent = 'Generar icon space'; }
+        if (iconsStatus) iconsStatus.textContent = 'Listo. Se creó el bloque en la página actual.';
+        return;
+      }
+      if (msg.type === 'icons:error') {
+        if (btnIcons) { btnIcons.disabled = false; btnIcons.textContent = 'Generar icon space'; }
+        if (iconsStatus) iconsStatus.innerHTML = '<span class="danger">' + (msg.error || 'Error') + '</span>';
+        return;
+      }
+};
 
     // arranque en home
     nav('home');
